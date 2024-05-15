@@ -1,0 +1,22 @@
+{
+  "name": "m2_node_api_movie",
+  "version": "1.0.0",
+  "description": "Une application chatbot NLP en nodeJS.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Jakyln/M2_Node_API_movie.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/Jakyln/M2_Node_API_movie/issues"
+  },
+  "homepage": "https://github.com/Jakyln/M2_Node_API_movie#readme",
+  "dependencies": {
+    "express": "^4.19.2"
+  }
+}
