@@ -17,6 +17,7 @@
   },
   "homepage": "https://github.com/Jakyln/M2_Node_API_movie#readme",
   "dependencies": {
+    "@lmstudio/sdk": "^0.0.12",
     "express": "^4.19.2"
   }
 }
