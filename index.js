@@ -13,7 +13,7 @@ const client = new LMStudioClient();
 const gemma2b = await client.llm.load("lmstudio-ai/gemma-2b-it-GGUF");
 
 // Create a text completion prediction
-const prediction = gemma2b.complete("The meaning of life is");
+// const prediction = gemma2b.complete("The meaning of life is");
 
 let str = "";
 // Stream the response
@@ -22,9 +22,24 @@ let str = "";
   //str += text;
 } */
 
+async function llm(query){
+  const prediction = gemma2b.complete(query);
+  
+    for await (const text of prediction) {
+      str += text;
+    }
+}
 
-app.get('/', (req, res) => {
-  res.send(`${str}`)
+
+app.get('/request', async (req, res) => {
+  if (req.query.query){
+    str = "";
+    await llm(req.query.query)
+    res.send(str)
+  }
+  else{
+    res.send("Vous devez renseigner le paramettre 'query'.")
+  }
 })
 
 app.listen(port, () => {
