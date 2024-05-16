@@ -22,7 +22,7 @@ let str = "";
 } */
 
 async function llm(query){
-  /* const prediction = gemma2b.respond([
+  const prediction = gemma2b.respond([
     { role: "system", content: "Donne moi un nom de film et je te dirais la date." },
     { role: "user", content: "Inception" },
     { role: "system", content: "Inception est sorti en 2010. Un autre !" },
@@ -32,12 +32,12 @@ async function llm(query){
   ]);
     for await (const text of prediction) {
       str += text;
-    } */
-   await MovieDataService.findMovieByName(query).then((res) => {
+    }
+   /* await MovieDataService.findMovieByName(query).then((res) => {
      str+= res;
      //process.stdout.write(res.data[0].original_title);
      str = res.data;
-   });
+   }); */
 }
 
 
