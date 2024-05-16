@@ -23,8 +23,14 @@ let str = "";
 } */
 
 async function llm(query){
-  const prediction = gemma2b.complete(query);
-  
+  const prediction = gemma2b.respond([
+    { role: "system", content: "Donne moi un nom de film et je te dirais la date." },
+    { role: "user", content: "Inception" },
+    { role: "system", content: "Inception est sorti en 2010. Un autre !" },
+    { role: "user", content: "voiture" },
+    { role: "system", content: "Je ne connais pas ce film. Peut tu m'en dire un autre ?" },
+    { role: "user", content: query },
+  ]);
     for await (const text of prediction) {
       str += text;
     }
