@@ -22,8 +22,19 @@ let str = "";
   //str += text;
 } */
 
-async function llm(query){
+async function llm1(query){
   const prediction = gemma2b.complete(query);
+  
+    for await (const text of prediction) {
+      str += text;
+    }
+}
+
+async function llm2(query){
+  const prediction = gemma2b.respond(
+    [{ role: 'system', content: "Tu dois trouver le verbe de la phrase suivante en donnant une réponse la plus courte possible." },
+    { role: 'user', content: query }]
+  );
   
     for await (const text of prediction) {
       str += text;
@@ -34,7 +45,18 @@ async function llm(query){
 app.get('/request', async (req, res) => {
   if (req.query.query){
     str = "";
-    await llm(req.query.query)
+    await llm1(req.query.query)
+    res.send(str)
+  }
+  else{
+    res.send("Vous devez renseigner le paramettre 'query'.")
+  }
+})
+
+app.get('/request2', async (req, res) => {
+  if (req.query.query){
+    str = "";
+    await llm2(req.query.query)
     res.send(str)
   }
   else{
