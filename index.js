@@ -1,10 +1,9 @@
+//lancer app :node --env-file=.env index.js
+import 'dotenv/config';
 import pkg from "@lmstudio/sdk";
 import express from 'express';
-
-//const express = require('express')
-
+import MovieDataService from "./MovieDataService";
 const { LMStudioClient } = pkg;
-
 const app = express();
 const port = 3000;
 const client = new LMStudioClient();
@@ -23,7 +22,7 @@ let str = "";
 } */
 
 async function llm(query){
-  const prediction = gemma2b.respond([
+  /* const prediction = gemma2b.respond([
     { role: "system", content: "Donne moi un nom de film et je te dirais la date." },
     { role: "user", content: "Inception" },
     { role: "system", content: "Inception est sorti en 2010. Un autre !" },
@@ -33,7 +32,12 @@ async function llm(query){
   ]);
     for await (const text of prediction) {
       str += text;
-    }
+    } */
+   await MovieDataService.findMovieByName(query).then((res) => {
+     str+= res;
+     //process.stdout.write(res.data[0].original_title);
+     str = res.data;
+   });
 }
 
 
@@ -51,3 +55,23 @@ app.get('/request', async (req, res) => {
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}...`)
 })
+
+
+
+
+
+/* const fetch = require('node-fetch');
+
+const url = 'https://api.themoviedb.org/3/search/movie?query=tenet&include_adult=false&language=en-US&page=1';
+const options = {
+  method: 'GET',
+  headers: {
+    accept: 'application/json',
+    Authorization: 'Bearer eyJhbGciOiJIUzI1NiJ9.eyJhdWQiOiI2OTJjMjhjMzBjOTgyNDI2YzNkOTNiZGMyZTE4MTc5YiIsInN1YiI6IjY2NDViYmFhNDM0MzZkM2M0ZDk1MzRlMiIsInNjb3BlcyI6WyJhcGlfcmVhZCJdLCJ2ZXJzaW9uIjoxfQ.AWbEA25VbwLLP1eAqnX6ruFAWR7cStxSIVRT3kxZ7ew'
+  }
+};
+
+fetch(url, options)
+  .then(res => res.json())
+  .then(json => console.log(json))
+  .catch(err => console.error('error:' + err)); */
