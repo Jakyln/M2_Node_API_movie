@@ -1,5 +1,4 @@
 //lancer app :node --env-file=.env index.js
-import 'dotenv/config';
 import pkg from "@lmstudio/sdk";
 import express from 'express';
 import MovieDataService from "./MovieDataService";
