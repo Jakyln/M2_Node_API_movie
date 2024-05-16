@@ -8,55 +8,101 @@ const app = express();
 const port = 3000;
 const client = new LMStudioClient();
 
+
+import bodyParser from "body-parser";
+//import * as bodyParser from "body-parser"
+//const bodyParser = require('body-parser');
+/* bodyParser.json() 
+bodyParser.urlencoded()  */
+/* app.use(bodyParser.urlencoded({ extended: false }));
+app.use(bodyParser.json());
+
+app.use(app.urlencoded({ extended: false }));
+app.use(app.json()); */
+
+app.use(express.json())
+
 // Load a model
 //const gemma2b = await client.llm.load("lmstudio-ai/gemma-2b-it-GGUF");
 const gemma2b = await client.llm.get({ path: "lmstudio-ai/gemma-2b-it-GGUF" });
 
 // Create a text completion prediction
-let str = "";
+let movieName = "";
+let jsonAPI = "";
+let readableJson = "";
 
 async function llm(query){
-  /* const prediction = gemma2b.respond([
-    { role: "system", content: "Bonjour ! Je suis un AI assistant expert en films." },
-    { role: "user", content: "A partir de maintenant, lorsque tu détecte un nom de film dans mes questions, je veux que tu l'isole et le mette à la fin de ta réponse formaté de cette facon 'Film:\"{NOM_DE_FILM}\"'!" },
-    { role: "system", content: "D'accord, je vais garder cela à l'esprit ! Si tu as besoin de discuter de films, n'hésite pas à en mentionner un dans ta question, et je veillerai à inclure son nom à la fin de ma réponse. sans oublier les guiellements autour du nom comme ci : Film:\"{NOM_DE_FILM}\" " },
-    { role: "user", content: query },
-  ]); */
-
-  const prompt = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
-  const prediction = gemma2b.complete(prompt);
-
-    /*const prediction = gemma2b.respond([
-      { role: "system", content: "Donne moi un nom de film et je te dirais la date." },
-      { role: "user", content: "Inception" },
-      { role: "system", content: "Inception est sorti en 2010. Un autre !" },
-      { role: "user", content: "voiture" },
-      { role: "system", content: "Je ne connais pas ce film. Peut tu m'en dire un autre ?" },
-      { role: "user", content: query },
-    ]); */
-
-    for await (const text of prediction) {
-      str += text;
+  //Isoler le nom du film à partir du user input
+  const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
+  const predictionOfMovieName = gemma2b.complete(promptMovieName);
+//répond moi en json, formater ex : {reponse : tenet}
+    for await (const text of predictionOfMovieName) {
+      movieName += text;
     }
 
-   await MovieDataService.findMovieByName(str).then((res) => {
-     process.stdout.write(`|${str}`);
-     str = res.data;
+  //Recup appel json API externe movies
+   await MovieDataService.findMovieByName(movieName).then((res) => {
+     process.stdout.write(`|${movieName}`);
+     jsonAPI = JSON.stringify(res.data.results[0]);
+     //process.stdout.write(`|${jsonAPI}`);
    });
+
+  //LLM traduit en textuel le json
+  const promptReadableJson = `A partir de cet objet JSON, présente moi ce film : <filmJSON>${jsonAPI}</filmJSON>"`;
+  const predictionOfReadableJson = gemma2b.complete(promptReadableJson);
+  for await (const text of predictionOfReadableJson) {
+    readableJson += text;
+  }
+  //readableJson = await predictionOfReadableJson;
+
 }
 
 
 app.get('/request', async (req, res) => {
-  if (req.query.query){
-    str = "";
-    await llm(req.query.query);
-    res.send(str);
-  }
-  else{
-    res.send("Vous devez renseigner le paramettre 'query'.")
-  }
+ if (req.body.input){
+  readableJson = "";
+   await llm(req.body.input);
+   res.send(readableJson);
+ }
+ else{
+   res.send("Vous devez renseigner le paramettre 'query'.")
+ }
 })
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}...`)
 })
+
+/*
+L'utilisateur envoie une phrase input avec un nom de film
+On lance un prompt pour dire aux llm de ressortir uniquement le nom du film à partir de la phrase
+Avec ce nom de film on fait un appel API TMDB pour aller chercher le json des infos de ce film
+On envoie ce json
+
+-- futur
+On cache la réponse llm completion
+on lance ensuite une autre réponse llm completion, avec comme contexte une demande de ressortir en mode language le fichier json recu de l'api
+on lance ensuite une réponse llm chatbot, avec comme contexte, le résultat de la réponse précédante
+*/
+
+
+
+
+   /* 
+   const predictionChatbot = gemma2b.respond([
+    { role: "system", content: "Bonjour, je suis une IA experte en films. Parlons de film ensemble !" },
+    { role: "user", content: `${movieName}` },
+    { role: "system", content:  },
+    { role: "user", content: "voiture" },
+    { role: "system", content: "Je ne connais pas ce film. Peut tu m'en dire un autre ?" },
+    { role: "user", content: query },
+  ]);
+
+  for await (const text of predictionReadableJson) {
+    readableJson += text;
+  }
+
+  Faire un schéma du resumé suivant
+
+A partir d'un input utilisateur parlant d'un film, le llm présente les données du film à partir du JSON d'une api distante
+    */
