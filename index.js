@@ -48,7 +48,23 @@ async function llm(query){
    });
 
   //LLM traduit en textuel le json
-  const promptReadableJson = `A partir de cet objet JSON, présente moi ce film : <filmJSON>${jsonAPI}</filmJSON>"`;
+  //const promptReadableJson = `A partir de cet objet JSON, présente moi ce film : <filmJSON>${jsonAPI}</filmJSON>"`;
+  const promptReadableJson = `
+    A partir de l'objet JSON filmJSON, présente-moi les données du film sous forme de liste à puces en suivant le modèle HTML suivant :
+    Format attendu :
+
+    <ul>
+      <li><strong>Titre :</strong> [title]</li>
+      <li><strong>Année de sortie :</strong> [release_date]</li>
+      <li><strong>Langue :</strong> [original_language]</li>
+      <li><strong>Synopsis :</strong> [overview]</li>
+      <li><strong>Rang :</strong> [popularity]</li>
+    </ul>
+
+    <filmJSON>${jsonAPI}</filmJSON>
+
+    
+  `;
   const predictionOfReadableJson = gemma2b.complete(promptReadableJson);
   for await (const text of predictionOfReadableJson) {
     readableJson += text;
@@ -63,6 +79,7 @@ app.get('/request', async (req, res) => {
   readableJson = "";
    await llm(req.body.input);
    res.send(readableJson);
+   //res.send(jsonAPI);
  }
  else{
    res.send("Vous devez renseigner le paramettre 'query'.")
