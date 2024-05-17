@@ -1,11 +1,18 @@
 //lancer app :node --env-file=.env index.js
 import pkg from "@lmstudio/sdk";
 import express from 'express';
-import MovieDataService from "./MovieDataService";
+import MovieDataService from "./MovieDataService.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
 const { LMStudioClient } = pkg;
 const app = express();
 const port = 3000;
 const client = new LMStudioClient();
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
+
+app.use(express.json())
 
 // Load a model
 const gemma2b = await client.llm.load("lmstudio-ai/gemma-2b-it-GGUF");
@@ -45,16 +52,38 @@ async function llm1(query){
 }
 
 async function llm2(query){
-  const prediction = gemma2b.respond(
-    [{ role: 'system', content: "Tu dois trouver le verbe de la phrase suivante en donnant une réponse la plus courte possible." },
-    { role: 'user', content: query }]
-  );
+  const prediction = gemma2b.respond([
+    { role: 'system', content: "Fait une réponse courte" },
+    { role: 'user', content: query },
+  ]);
   
     for await (const text of prediction) {
       str += text;
     }
 }
 
+
+app.post('/request_film', async (req, res) => {
+  if (req.body.query){
+    str = "";
+    await llm(req.body.query)
+    res.send(str)
+  }
+  else{
+    res.send("Vous devez renseigner le paramettre 'query'.")
+  }
+})
+
+app.post('/request2', async (req, res) => {
+  if (req.body.query){
+    str = "";
+    await llm2(req.body.query)
+    res.send({response: str})
+  }
+  else{
+    res.send({response: "Vous devez renseigner le paramettre 'query'."})
+  }
+})
 
 app.get('/request', async (req, res) => {
   if (req.query.query){
@@ -67,15 +96,10 @@ app.get('/request', async (req, res) => {
   }
 })
 
-app.get('/request2', async (req, res) => {
-  if (req.query.query){
-    str = "";
-    await llm2(req.query.query)
-    res.send(str)
-  }
-  else{
-    res.send("Vous devez renseigner le paramettre 'query'.")
-  }
+
+// Index page
+app.get('/', async (req, res) => {
+  res.sendFile(path.join(__dirname, '/index.html'))
 })
 
 app.listen(port, () => {
