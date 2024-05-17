@@ -12,21 +12,9 @@ const client = new LMStudioClient();
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
-import bodyParser from "body-parser";
-//import * as bodyParser from "body-parser"
-//const bodyParser = require('body-parser');
-/* bodyParser.json() 
-bodyParser.urlencoded()  */
-/* app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.json());
-
-app.use(app.urlencoded({ extended: false }));
-app.use(app.json()); */
-
 app.use(express.json())
 
 // Load a model
-//const gemma2b = await client.llm.load("lmstudio-ai/gemma-2b-it-GGUF");
 const gemma2b = await client.llm.get({ path: "lmstudio-ai/gemma-2b-it-GGUF" });
 
 // Create a text completion prediction
@@ -47,13 +35,14 @@ async function llm(query){
    await MovieDataService.findMovieByName(movieName).then((res) => {
      process.stdout.write(`|${movieName}`);
      jsonAPI = JSON.stringify(res.data.results[0]);
-     //process.stdout.write(`|${jsonAPI}`);
    });
 
   //LLM traduit en textuel le json
-  //const promptReadableJson = `A partir de cet objet JSON, présente moi ce film : <filmJSON>${jsonAPI}</filmJSON>"`;
+  //Bonjour, j'aime beacoup Tenet, c'est mon film préféré !
+  //Ne génère pas de code Python, uniquement du HTML formaté selon les instructions ci-dessous
   const promptReadableJson = `
-    A partir de l'objet JSON filmJSON, présente-moi les données du film sous forme de liste à puces en suivant le modèle HTML suivant :
+    A partir de cet objet JSON, présente-moi ce film sous forme de liste à puces en HTML :
+
     Format attendu :
 
     <ul>
@@ -64,30 +53,14 @@ async function llm(query){
       <li><strong>Rang :</strong> [popularity]</li>
     </ul>
 
-    <filmJSON>${jsonAPI}</filmJSON>
-
-    
+    Voici les données du film :
+    ${jsonAPI}
   `;
   const predictionOfReadableJson = gemma2b.complete(promptReadableJson);
   for await (const text of predictionOfReadableJson) {
     readableJson += text;
   }
-  //readableJson = await predictionOfReadableJson;
-
 }
-
-
-app.get('/request', async (req, res) => {
- if (req.body.input){
-  readableJson = "";
-   await llm(req.body.input);
-   res.send(readableJson);
-   //res.send(jsonAPI);
- }
- else{
-   res.send("Vous devez renseigner le paramettre 'query'.")
- }
-})
 
 // Index page
 app.get('/', async (req, res) => {
@@ -96,6 +69,18 @@ app.get('/', async (req, res) => {
 
 app.listen(port, () => {
   console.log(`Example app listening on port ${port}...`)
+})
+
+
+app.post('/request', async (req, res) => {
+  if (req.body.query){
+    readableJson = "";
+    await llm(req.body.query)
+    res.send({response: readableJson})
+  }
+  else{
+    res.send({response: "Vous devez renseigner le paramettre 'query'."})
+  }
 })
 
 /*
