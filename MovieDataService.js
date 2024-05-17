@@ -1,4 +1,5 @@
 import Axios from "axios";
+import 'dotenv/config';
 
 const MOVIE_API_URL = process.env.TMDB_MOVIE_API_KEY;
 const baseUrl = "https://api.themoviedb.org/3";

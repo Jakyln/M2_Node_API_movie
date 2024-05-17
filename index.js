@@ -1,13 +1,16 @@
 //lancer app :node --env-file=.env index.js
-import 'dotenv/config';
 import pkg from "@lmstudio/sdk";
 import express from 'express';
 import MovieDataService from "./MovieDataService.js";
+import path from 'path';
+import { fileURLToPath } from 'url';
 const { LMStudioClient } = pkg;
 const app = express();
 const port = 3000;
 const client = new LMStudioClient();
 
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 import bodyParser from "body-parser";
 //import * as bodyParser from "body-parser"
@@ -84,6 +87,11 @@ app.get('/request', async (req, res) => {
  else{
    res.send("Vous devez renseigner le paramettre 'query'.")
  }
+})
+
+// Index page
+app.get('/', async (req, res) => {
+  res.sendFile(path.join(__dirname, '/index.html'))
 })
 
 app.listen(port, () => {
