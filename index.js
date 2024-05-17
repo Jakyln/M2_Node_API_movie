@@ -36,19 +36,14 @@ async function llm(query){
     { role: "system", content: "Je ne connais pas ce film. Peut tu m'en dire un autre ?" },
     { role: "user", content: query },
   ]);
-}
-
-async function llm1(query){
-  const prediction = gemma2b.complete(query);
-  
-    for await (const text of prediction) {
-      str += text;
-    }
-   await MovieDataService.findMovieByName(query).then((res) => {
+  for await (const text of prediction) {
+    str += text;
+  }
+  /* await MovieDataService.findMovieByName(query).then((res) => {
      str+= res;
      //process.stdout.write(res.data[0].original_title);
      str = res.data;
-   });
+   }); */
 }
 
 async function llm2(query){
@@ -62,19 +57,19 @@ async function llm2(query){
     }
 }
 
+// app.get('/request', async (req, res) => {
+//   if (req.query.query){
+//     str = "";
+//     await llm1(req.query.query)
+//     res.send(str)
+//   }
+//   else{
+//     res.send("Vous devez renseigner le paramettre 'query'.")
+//   }
+// })
 
-app.post('/request_film', async (req, res) => {
-  if (req.body.query){
-    str = "";
-    await llm(req.body.query)
-    res.send(str)
-  }
-  else{
-    res.send("Vous devez renseigner le paramettre 'query'.")
-  }
-})
-
-app.post('/request2', async (req, res) => {
+// api chatbot
+app.post('/request', async (req, res) => {
   if (req.body.query){
     str = "";
     await llm2(req.body.query)
@@ -84,18 +79,6 @@ app.post('/request2', async (req, res) => {
     res.send({response: "Vous devez renseigner le paramettre 'query'."})
   }
 })
-
-app.get('/request', async (req, res) => {
-  if (req.query.query){
-    str = "";
-    await llm1(req.query.query)
-    res.send(str)
-  }
-  else{
-    res.send("Vous devez renseigner le paramettre 'query'.")
-  }
-})
-
 
 // Index page
 app.get('/', async (req, res) => {

@@ -32,7 +32,7 @@
   // appel API et traitement de la réponse
   function sendToChatbot(){
     let user_input = document.querySelector("#user_input").value
-    fetch("http://localhost:3000/request2", {
+    fetch("http://localhost:3000/request", {
       method: "POST",
       headers: {'Content-Type': 'application/json'}, 
       body: JSON.stringify({'query': user_input})
