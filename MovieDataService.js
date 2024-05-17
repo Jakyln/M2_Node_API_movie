@@ -10,7 +10,7 @@ class MovieDataService {
     } */
 
     findMovieByName(movieName) {
-        return Axios.get(`${baseUrl}/search/movie?query=${encodeURIComponent(movieName)}&api_key=${MOVIE_API_URL}`);
+        return Axios.get(`${baseUrl}/search/movie?query=${encodeURIComponent(movieName)}&language=fr-FR&api_key=${MOVIE_API_URL}`);
     }
 }
 export default new MovieDataService();
