@@ -54,24 +54,22 @@ app.get("/generate", (req, res) => {
 
 
 // Create a text completion prediction
-let movieName = "";
 let jsonAPI = "";
 let readableJson = "";
 
 async function llm(query){
-  movieName = "";
   //Isoler le nom du film à partir du user input
   const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
   const predictionOfMovieName = geminiFlash.generateContent(promptMovieName);
 //répond moi en json, formater ex : {reponse : tenet}
      //connecter à chatgpt. il verif qu'on a bien extrait le nom dans la bonne langue, sans erreurs
-    for await (const text of predictionOfMovieName) {
-      movieName += text;
-    }
+     const responseMovie = await predictionOfMovieName.response;
+     process.stdout.write(`|${responseMovie}\n`);
+     const movieName = responseMovie.text();
 
   //Recup appel json API externe movies
    await MovieDataService.findMovieByName(movieName).then((res) => {
-     process.stdout.write(`|${movieName}`);
+     process.stdout.write(`|${movieName}\n`);
      //connecter à chatgpt. Si L'api renvoie plusieurs résultats, on prend une map avec l'index et le nom du film. On demande à chat gpt d'analyser la prompt user initial et de ressortir le bon id. On choisit celui ci dans jsonapi
      jsonAPI = JSON.stringify(res.data.results[0]);
    });
