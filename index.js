@@ -1,9 +1,10 @@
 //lancer app :node --env-file=.env index.js
-import pkg from "@lmstudio/sdk";
+import 'dotenv/config';
 import express from 'express';
 import MovieDataService from "./MovieDataService.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
+import pkg from "@lmstudio/sdk";
 const { LMStudioClient } = pkg;
 const app = express();
 const port = 3000;
@@ -14,8 +15,49 @@ const __dirname = path.dirname(__filename);
 
 app.use(express.json())
 
-// Load a model
+// Load models
 const gemma2b = await client.llm.get({ path: "lmstudio-ai/gemma-2b-it-GGUF" });
+
+
+/* import GoogleGenerativeAIPackage from "@google/generative-ai";
+const { GoogleGenerativeAI } = GoogleGenerativeAIPackage; */
+
+import { GoogleGenerativeAI } from "@google/generative-ai";
+
+// Configuration requise pour GoogleGenerativeAI
+const configuration = new GoogleGenerativeAI(process.env.GEMINI_AI_API_KEY);
+
+// initialisation de modèle
+const geminiId = "gemini-1.5-flash";
+const geminiFlash = configuration.getGenerativeModel({ model: geminiId });
+
+
+
+
+
+
+
+
+
+/* import bodyParserpackage from "body-parser";
+const bodyParser = bodyParserpackage;
+import { generateResponse } from "./controller/index.js";
+
+//middleware to parse the body content to JSON
+app.use(bodyParser.json());
+
+app.post("/generate", generateResponse);
+
+app.get("/generate", (req, res) => {
+  res.send(history);
+});
+ */
+
+
+
+
+
+
 
 // Create a text completion prediction
 let movieName = "";
@@ -27,6 +69,7 @@ async function llm(query){
   const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
   const predictionOfMovieName = gemma2b.complete(promptMovieName);
 //répond moi en json, formater ex : {reponse : tenet}
+     //connecter à chatgpt. il verif qu'on a bien extrait le nom dans la bonne langue, sans erreurs
     for await (const text of predictionOfMovieName) {
       movieName += text;
     }
@@ -34,13 +77,14 @@ async function llm(query){
   //Recup appel json API externe movies
    await MovieDataService.findMovieByName(movieName).then((res) => {
      process.stdout.write(`|${movieName}`);
+     //connecter à chatgpt. Si L'api renvoie plusieurs résultats, on prend une map avec l'index et le nom du film. On demande à chat gpt d'analyser la prompt user initial et de ressortir le bon id. On choisit celui ci dans jsonapi
      jsonAPI = JSON.stringify(res.data.results[0]);
    });
 
   //LLM traduit en textuel le json
   //Bonjour, j'aime beacoup Tenet, c'est mon film préféré !
   //Ne génère pas de code Python, uniquement du HTML formaté selon les instructions ci-dessous
-  const promptReadableJson = `
+  const promptReadableJson1 = `
     A partir de cet objet JSON, présente-moi ce film sous forme de liste à puces en HTML :
 
     Format attendu :
@@ -56,10 +100,19 @@ async function llm(query){
     Voici les données du film :
     ${jsonAPI}
   `;
-  const predictionOfReadableJson = gemma2b.complete(promptReadableJson);
-  for await (const text of predictionOfReadableJson) {
+  const promptReadableJson =  `
+   A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. Tu peux également complémenter avec tes propres informations. L'objet JSON : ${jsonAPI}`
+  //const predictionOfReadableJson = gemma2b.complete(promptReadableJson);
+  //test gemini
+  const predictionOfReadableJson = await geminiFlash.generateContent(promptReadableJson);
+
+  //chatgpt verif aussi ici, idem que en haut. ca peut aussi etre gemini
+  /* for await (const text of predictionOfReadableJson) {
     readableJson += text;
-  }
+  } */
+  const response = await predictionOfReadableJson.response;
+  readableJson = response.text();
+
 }
 
 // Index page
