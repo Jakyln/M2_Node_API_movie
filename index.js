@@ -68,7 +68,7 @@ let readableJson = "";
 async function llm(query){
   
   //Isoler le nom du film à partir du user input
-  const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
+  const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Si tu remarque des fautes, tu peux les corriger. Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
   const generatedMovieName = await geminiFlash.generateContent(promptMovieName);
   //répond moi en json, formater ex : {reponse : tenet}
   //connecter à chatgpt. il verif qu'on a bien extrait le nom dans la bonne langue, sans erreurs
@@ -76,17 +76,51 @@ async function llm(query){
   const movieName = movieNameResponse.text();
 
     //Recup appel json API externe movies
+
+    let movieArraySimplified = [];
+    let movieArrayJSON = [];
+
     await MovieDataService.findMovieByName(movieName).then((res) => {
+      movieArrayJSON = res.data;
      process.stdout.write(`|${movieName}`);
      //connecter à chatgpt. Si L'api renvoie plusieurs résultats, on prend une map avec l'index et le nom du film. On demande à chat gpt d'analyser la prompt user initial et de ressortir le bon id. On choisit celui ci dans jsonapi
-     jsonAPI = JSON.stringify(res.data.results[0]);
+     for (let index = 0; index < res.data.results.length; index++) {
+      const element = res.data.results[index];
+      let obj = {
+        index:index,
+        title:element.title
+      };
+      movieArraySimplified.push(element.title);
+     }
    });
+
+   const promptVerifRightMovie = `
+   J'ai fait une demande à une API de film à partir d'un titre en entré, et il m'a ressorti une liste.
+   Cependant, le titre en entré n'est parfois pas exact et l'api renverra une erreur.
+   J'ai besoin que tu analyse cette liste, et qui tu ressorte l'élément qui correspond le mieux au titre d'entré envoyé par l'utilisateur. 
+   Attention, je ne veux pas que ta réponse soit une phrase, je veux uniquement le titre et rien d'autre.
+   Le titre d'entré : "${movieName}". La liste : "${movieArraySimplified}".
+   `;
+
+   const verifRightMovie = await geminiFlash.generateContent(promptVerifRightMovie);
+   const responseVerifRightMovie = await verifRightMovie.response;
+   const titleRightMovie = responseVerifRightMovie.text();
+   let indexRightMovie = -1;
+    process.stdout.write(`\n|${titleRightMovie},`);
+   for (let index = 0; index < movieArraySimplified.length; index++) {
+    const title = movieArraySimplified[index];
+    if(title.trim() === titleRightMovie.trim()){
+      indexRightMovie = index;
+    }
+  }
+  ;
+   jsonAPI = movieArrayJSON.results[indexRightMovie];
 
   //LLM traduit en textuel le json
   //Bonjour, j'aime beacoup Tenet, c'est mon film préféré !
   //Ne génère pas de code Python, uniquement du HTML formaté selon les instructions ci-dessous
   const promptReadableJson =  `
-   A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. Tu peux également complémenter avec tes propres informations. L'objet JSON : ${jsonAPI}`
+   A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. Tu peux également complémenter avec tes propres informations. L'objet JSON : ${JSON.stringify(jsonAPI)}`
   const predictionOfReadableJson = await geminiFlash.generateContent(promptReadableJson);
   const response = await predictionOfReadableJson.response;
   readableJson = response.text();
