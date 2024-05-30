@@ -4,12 +4,9 @@ import express from 'express';
 import MovieDataService from "./MovieDataService.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
-/* import pkg from "@lmstudio/sdk";
-const { LMStudioClient } = pkg; */
 const app = express();
 const port = 3000;
-// const client = new LMStudioClient();
-
+import { HarmBlockThreshold, HarmCategory } from "@google/generative-ai";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
@@ -22,8 +19,27 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const configuration = new GoogleGenerativeAI(process.env.GEMINI_AI_API_KEY);
 
 // initialisation de modèle
+const safetySettings = [
+  {
+    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+];
+
 const geminiId = "gemini-1.5-flash";
-const geminiFlash = configuration.getGenerativeModel({ model: geminiId });
+const geminiFlash = configuration.getGenerativeModel({ model: geminiId, safetySettings });
 
 /* import bodyParserpackage from "body-parser";
 const bodyParser = bodyParserpackage;
