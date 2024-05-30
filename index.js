@@ -4,11 +4,11 @@ import express from 'express';
 import MovieDataService from "./MovieDataService.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
-import pkg from "@lmstudio/sdk";
-const { LMStudioClient } = pkg;
+/* import pkg from "@lmstudio/sdk";
+const { LMStudioClient } = pkg; */
 const app = express();
 const port = 3000;
-const client = new LMStudioClient();
+// const client = new LMStudioClient();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -16,12 +16,6 @@ const __dirname = path.dirname(__filename);
 app.use(express.json())
 
 // Load models
-const gemma2b = await client.llm.get({ path: "lmstudio-ai/gemma-2b-it-GGUF" });
-//const gemma2b = await client.llm.get({ path: "TheBloke/Mistral-7B-Instruct-v0.1-GGUF" });
-
-/* import GoogleGenerativeAIPackage from "@google/generative-ai";
-const { GoogleGenerativeAI } = GoogleGenerativeAIPackage; */
-
 import { GoogleGenerativeAI } from "@google/generative-ai";
 
 // Configuration requise pour GoogleGenerativeAI
@@ -68,7 +62,7 @@ async function llm(query){
   movieName = "";
   //Isoler le nom du film à partir du user input
   const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
-  const predictionOfMovieName = gemma2b.complete(promptMovieName);
+  const predictionOfMovieName = geminiFlash.generateContent(promptMovieName);
 //répond moi en json, formater ex : {reponse : tenet}
      //connecter à chatgpt. il verif qu'on a bien extrait le nom dans la bonne langue, sans erreurs
     for await (const text of predictionOfMovieName) {
@@ -85,35 +79,11 @@ async function llm(query){
   //LLM traduit en textuel le json
   //Bonjour, j'aime beacoup Tenet, c'est mon film préféré !
   //Ne génère pas de code Python, uniquement du HTML formaté selon les instructions ci-dessous
-  const promptReadableJson1 = `
-    A partir de cet objet JSON, présente-moi ce film sous forme de liste à puces en HTML :
-
-    Format attendu :
-
-    <ul>
-      <li><strong>Titre :</strong> [title]</li>
-      <li><strong>Année de sortie :</strong> [release_date]</li>
-      <li><strong>Langue :</strong> [original_language]</li>
-      <li><strong>Synopsis :</strong> [overview]</li>
-      <li><strong>Rang :</strong> [popularity]</li>
-    </ul>
-
-    Voici les données du film :
-    ${jsonAPI}
-  `;
   const promptReadableJson =  `
    A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. Tu peux également complémenter avec tes propres informations. L'objet JSON : ${jsonAPI}`
-  //const predictionOfReadableJson = gemma2b.complete(promptReadableJson);
-  //test gemini
   const predictionOfReadableJson = await geminiFlash.generateContent(promptReadableJson);
-
-  //chatgpt verif aussi ici, idem que en haut. ca peut aussi etre gemini
-  /* for await (const text of predictionOfReadableJson) {
-    readableJson += text;
-  } */
   const response = await predictionOfReadableJson.response;
   readableJson = response.text();
-
 }
 
 // Index page
