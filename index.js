@@ -17,7 +17,7 @@ app.use(express.json())
 
 // Load models
 const gemma2b = await client.llm.get({ path: "lmstudio-ai/gemma-2b-it-GGUF" });
-
+//const gemma2b = await client.llm.get({ path: "TheBloke/Mistral-7B-Instruct-v0.1-GGUF" });
 
 /* import GoogleGenerativeAIPackage from "@google/generative-ai";
 const { GoogleGenerativeAI } = GoogleGenerativeAIPackage; */
@@ -65,6 +65,7 @@ let jsonAPI = "";
 let readableJson = "";
 
 async function llm(query){
+  movieName = "";
   //Isoler le nom du film à partir du user input
   const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
   const predictionOfMovieName = gemma2b.complete(promptMovieName);
