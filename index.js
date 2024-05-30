@@ -52,28 +52,39 @@ let readableJson = "";
 async function llm(query){
   
   //Isoler le nom du film à partir du user input
-  const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
+  const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre du film et rien d'autre. Si il n'y en a pas réponds "". La phrase est : "${query}". Réponse :`;
   const generatedMovieName = await geminiFlash.generateContent(promptMovieName);
   //répond moi en json, formater ex : {reponse : tenet}
   //connecter à chatgpt. il verif qu'on a bien extrait le nom dans la bonne langue, sans erreurs
   const movieNameResponse = await generatedMovieName.response;
   const movieName = movieNameResponse.text();
 
+  if (movieName.trim() === '""'){
+    readableJson = "Je n'ai pas trouvé de nom de film dans votre requête."
+    return
+  }
+  else{
     //Recup appel json API externe movies
     await MovieDataService.findMovieByName(movieName).then((res) => {
-     process.stdout.write(`|${movieName}\n`);
-     //connecter à chatgpt. Si L'api renvoie plusieurs résultats, on prend une map avec l'index et le nom du film. On demande à chat gpt d'analyser la prompt user initial et de ressortir le bon id. On choisit celui ci dans jsonapi
-     jsonAPI = JSON.stringify(res.data.results[0]);
-   });
+      process.stdout.write(`|${movieName}\n`);
+      //connecter à chatgpt. Si L'api renvoie plusieurs résultats, on prend une map avec l'index et le nom du film. On demande à chat gpt d'analyser la prompt user initial et de ressortir le bon id. On choisit celui ci dans jsonapi
+      jsonAPI = JSON.stringify(res.data.results[0]);
+    });
 
-  //LLM traduit en textuel le json
-  //Bonjour, j'aime beacoup Tenet, c'est mon film préféré !
-  //Ne génère pas de code Python, uniquement du HTML formaté selon les instructions ci-dessous
-  const promptReadableJson =  `
-   A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. Tu peux également complémenter avec tes propres informations. L'objet JSON : ${jsonAPI}`
-  const predictionOfReadableJson = await geminiFlash.generateContent(promptReadableJson);
-  const response = await predictionOfReadableJson.response;
-  readableJson = response.text();
+    if (jsonAPI === undefined){
+      readableJson = "Je n'ai pas trouvé d'information à propos du film que vous m'avez donné."
+      return
+    }
+
+    //LLM traduit en textuel le json
+    //Bonjour, j'aime beacoup Tenet, c'est mon film préféré !
+    //Ne génère pas de code Python, uniquement du HTML formaté selon les instructions ci-dessous
+    const promptReadableJson =  `
+    A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. Tu peux également complémenter avec tes propres informations. L'objet JSON : ${jsonAPI}`
+    const predictionOfReadableJson = await geminiFlash.generateContent(promptReadableJson);
+    const response = await predictionOfReadableJson.response;
+    readableJson = response.text();
+  }
 }
 
 // Index page
