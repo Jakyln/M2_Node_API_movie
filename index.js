@@ -61,7 +61,7 @@ async function llm(query){
 
     //Recup appel json API externe movies
     await MovieDataService.findMovieByName(movieName).then((res) => {
-     process.stdout.write(`|${movieName}`);
+     process.stdout.write(`|${movieName}\n`);
      //connecter à chatgpt. Si L'api renvoie plusieurs résultats, on prend une map avec l'index et le nom du film. On demande à chat gpt d'analyser la prompt user initial et de ressortir le bon id. On choisit celui ci dans jsonapi
      jsonAPI = JSON.stringify(res.data.results[0]);
    });
