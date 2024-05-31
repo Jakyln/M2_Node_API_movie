@@ -68,13 +68,18 @@ let readableJson = "";
 async function llm(query){
   
   //Isoler le nom du film à partir du user input
-  const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Si tu remarque des fautes, tu peux les corriger. Attention, nous voulons seulement le titre. La phrase est : "${query}". Réponse :`;
+  const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre du film et rien d'autre. Si il n'y en a pas réponds "". La phrase est : "${query}". Réponse :`;
   const generatedMovieName = await geminiFlash.generateContent(promptMovieName);
   //répond moi en json, formater ex : {reponse : tenet}
   //connecter à chatgpt. il verif qu'on a bien extrait le nom dans la bonne langue, sans erreurs
   const movieNameResponse = await generatedMovieName.response;
   const movieName = movieNameResponse.text();
 
+  if (movieName.trim() === '""'){
+    readableJson = "Je n'ai pas trouvé de nom de film dans votre requête."
+    return
+  }
+  else{
     //Recup appel json API externe movies
 
     let movieArraySimplified = [];
