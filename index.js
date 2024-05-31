@@ -41,11 +41,6 @@ const safetySettings = [
 const geminiId = "gemini-1.5-flash";
 const geminiFlash = configuration.getGenerativeModel({ model: geminiId, safetySettings });
 
-// Create a text completion prediction
-let jsonAPI = "";
-let readableJson = "";
-
-
 
 // Fonction qui recherche un titre de film dans la phrase passé en paramètre pour récupérer des information
 // via l'api TMDB. Le LLM cherche le film qui correspond le mieux dans la liste et génère un résultat
@@ -53,6 +48,8 @@ let readableJson = "";
 // Si l'api TMBD n'a pas retourné de résultat ou si aucun titre de film n'a été trouvé dans la phrase
 // passé en paramètre, alors on retourne une réponse indiquant ce qui a échoué.
 async function llm(query) {
+  let jsonAPI = "";
+  let readableJson = "";
 
   //Isoler le nom du film à partir du user input
   const promptMovieName = `
@@ -68,7 +65,7 @@ async function llm(query) {
   // Si pas de titre de film, répondre que l'on a pas trouvé 
   if (movieName.trim() === '""') {
     readableJson = "Je n'ai pas trouvé de nom de film dans votre requête."
-    return
+    return readableJson
   } 
   else {
     //Recup appel json API externe movies 
@@ -126,9 +123,10 @@ async function llm(query) {
     // Si l'api TMBD n'a pas renvoyé de résultat, on répond que l'on a pas trouvé
     if (!jsonAPI) {
       readableJson = "Je n'ai pas trouvé d'information à propos du film que vous m'avez donné." 
-      return
+      return readableJson
     }
   }
+  return readableJson
 }
 
 // Index page (utilisé pour les tests)
@@ -145,9 +143,8 @@ app.listen(port, () => {
 // et renvoyer un prompt généré à partir des résultats fournis par l'api TMDB
 app.post('/request', async (req, res) => {
   if (req.body.query) {
-    readableJson = ""; 
-    await llm(req.body.query)
-    res.send({ response: readableJson })
+    const response = await llm(req.body.query)
+    res.send({ response: response })
   }
   else {
     res.send({ response: "Vous devez renseigner le paramettre 'query'." }) 
