@@ -65,70 +65,82 @@ app.get("/generate", (req, res) => {
 let jsonAPI = "";
 let readableJson = "";
 
-async function llm(query){
-  
+async function llm(query) {
+
   //Isoler le nom du film à partir du user input
-  const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre du film et rien d'autre. Si il n'y en a pas réponds "". La phrase est : "${query}". Réponse :`;
+  const promptMovieName = `
+  Quel est le nom du film dans la phrase suivante ? 
+  Si tu remarque des fautes, tu peux les corriger implicitement sans m'en informer. 
+  Attention, nous voulons seulement le titre. C'est très important car ta réponse sera envoyé à une API externe pour trouver le film.
+  Si tu ne trouve pas de titre de film dans la réponse, répond par une chaine vide "".
+  La phrase est : "${query}"`;
   const generatedMovieName = await geminiFlash.generateContent(promptMovieName);
   //répond moi en json, formater ex : {reponse : tenet}
   //connecter à chatgpt. il verif qu'on a bien extrait le nom dans la bonne langue, sans erreurs
   const movieNameResponse = await generatedMovieName.response;
   const movieName = movieNameResponse.text();
 
-  if (movieName.trim() === '""'){
+
+
+  if (movieName.trim() === '""') {
     readableJson = "Je n'ai pas trouvé de nom de film dans votre requête."
     return
   }
-  else{
+  else {
     //Recup appel json API externe movies
-
     let movieArraySimplified = [];
     let movieArrayJSON = [];
-
     await MovieDataService.findMovieByName(movieName).then((res) => {
+      process.stdout.write(`|${movieName}\n`);
       movieArrayJSON = res.data;
-     process.stdout.write(`|${movieName}`);
-     //connecter à chatgpt. Si L'api renvoie plusieurs résultats, on prend une map avec l'index et le nom du film. On demande à chat gpt d'analyser la prompt user initial et de ressortir le bon id. On choisit celui ci dans jsonapi
-     for (let index = 0; index < res.data.results.length; index++) {
-      const element = res.data.results[index];
-      let obj = {
-        index:index,
-        title:element.title
-      };
-      movieArraySimplified.push(element.title);
-     }
-   });
+      //connecter à chatgpt. Si L'api renvoie plusieurs résultats, on prend une map avec l'index et le nom du film. On demande à chat gpt d'analyser la prompt user initial et de ressortir le bon id. On choisit celui ci dans jsonapi
+      for (let index = 0; index < res.data.results.length; index++) {
+        const element = res.data.results[index];
+        movieArraySimplified.push(element.title);
+      }
+    });
 
-   const promptVerifRightMovie = `
-   J'ai fait une demande à une API de film à partir d'un titre en entré, et il m'a ressorti une liste.
-   Cependant, le titre en entré n'est parfois pas exact et l'api renverra une erreur.
-   J'ai besoin que tu analyse cette liste, et qui tu ressorte l'élément qui correspond le mieux au titre d'entré envoyé par l'utilisateur. 
-   Attention, je ne veux pas que ta réponse soit une phrase, je veux uniquement le titre et rien d'autre.
-   Le titre d'entré : "${movieName}". La liste : "${movieArraySimplified}".
-   `;
 
-   const verifRightMovie = await geminiFlash.generateContent(promptVerifRightMovie);
-   const responseVerifRightMovie = await verifRightMovie.response;
-   const titleRightMovie = responseVerifRightMovie.text();
-   let indexRightMovie = -1;
+
+
+    const promptVerifRightMovie = `
+    J'ai fait une demande à une API de film à partir d'un titre en entré, et il m'a ressorti une liste.
+    Cependant, le titre en entré n'est parfois pas exact et l'api renverra une erreur.
+    J'ai besoin que tu analyse cette liste, et qui tu ressorte l'élément qui correspond le mieux au titre d'entré envoyé par l'utilisateur. 
+    Attention, je ne veux pas que ta réponse soit une phrase, je veux uniquement le titre et rien d'autre, car ta réponse sera envoyé à l'api en question.
+    Le titre d'entré : "${movieName}". La liste : "${movieArraySimplified}".
+    `;
+
+    const verifRightMovie = await geminiFlash.generateContent(promptVerifRightMovie);
+    const responseVerifRightMovie = await verifRightMovie.response;
+    const titleRightMovie = responseVerifRightMovie.text();
+    let indexRightMovie = -1;
     process.stdout.write(`\n|${titleRightMovie},`);
-   for (let index = 0; index < movieArraySimplified.length; index++) {
-    const title = movieArraySimplified[index];
-    if(title.trim() === titleRightMovie.trim()){
-      indexRightMovie = index;
+    for (let index = 0; index < movieArraySimplified.length; index++) {
+      const title = movieArraySimplified[index];
+      if (title.trim() === titleRightMovie.trim()) {
+        indexRightMovie = index;
+      }
+    }
+
+    jsonAPI = movieArrayJSON.results[indexRightMovie];
+
+    //LLM traduit en textuel le json
+    //Bonjour, j'aime beacoup Tenet, c'est mon film préféré !
+    //Ne génère pas de code Python, uniquement du HTML formaté selon les instructions ci-dessous
+    const promptReadableJson = `
+    A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. 
+    Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. 
+    Tu peux également complémenter avec tes propres informations. L'objet JSON : ${JSON.stringify(jsonAPI)}`
+    const predictionOfReadableJson = await geminiFlash.generateContent(promptReadableJson);
+    const response = await predictionOfReadableJson.response;
+    readableJson = response.text();
+
+    if (jsonAPI === undefined) {
+      readableJson = "Je n'ai pas trouvé d'information à propos du film que vous m'avez donné."
+      return
     }
   }
-  ;
-   jsonAPI = movieArrayJSON.results[indexRightMovie];
-
-  //LLM traduit en textuel le json
-  //Bonjour, j'aime beacoup Tenet, c'est mon film préféré !
-  //Ne génère pas de code Python, uniquement du HTML formaté selon les instructions ci-dessous
-  const promptReadableJson =  `
-   A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. Tu peux également complémenter avec tes propres informations. L'objet JSON : ${JSON.stringify(jsonAPI)}`
-  const predictionOfReadableJson = await geminiFlash.generateContent(promptReadableJson);
-  const response = await predictionOfReadableJson.response;
-  readableJson = response.text();
 }
 
 // Index page
@@ -142,13 +154,13 @@ app.listen(port, () => {
 
 
 app.post('/request', async (req, res) => {
-  if (req.body.query){
+  if (req.body.query) {
     readableJson = "";
     await llm(req.body.query)
-    res.send({response: readableJson})
+    res.send({ response: readableJson })
   }
-  else{
-    res.send({response: "Vous devez renseigner le paramettre 'query'."})
+  else {
+    res.send({ response: "Vous devez renseigner le paramettre 'query'." })
   }
 })
 
@@ -167,21 +179,21 @@ on lance ensuite une réponse llm chatbot, avec comme contexte, le résultat de 
 
 
 
-   /* 
-   const predictionChatbot = gemma2b.respond([
-    { role: "system", content: "Bonjour, je suis une IA experte en films. Parlons de film ensemble !" },
-    { role: "user", content: `${movieName}` },
-    { role: "system", content:  },
-    { role: "user", content: "voiture" },
-    { role: "system", content: "Je ne connais pas ce film. Peut tu m'en dire un autre ?" },
-    { role: "user", content: query },
-  ]);
+/*
+const predictionChatbot = gemma2b.respond([
+ { role: "system", content: "Bonjour, je suis une IA experte en films. Parlons de film ensemble !" },
+ { role: "user", content: `${movieName}` },
+ { role: "system", content:  },
+ { role: "user", content: "voiture" },
+ { role: "system", content: "Je ne connais pas ce film. Peut tu m'en dire un autre ?" },
+ { role: "user", content: query },
+]);
 
-  for await (const text of predictionReadableJson) {
-    readableJson += text;
-  }
+for await (const text of predictionReadableJson) {
+ readableJson += text;
+}
 
-  Faire un schéma du resumé suivant
+Faire un schéma du resumé suivant
 
 A partir d'un input utilisateur parlant d'un film, le llm présente les données du film à partir du JSON d'une api distante
-    */
+ */
