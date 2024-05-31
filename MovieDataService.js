@@ -16,5 +16,3 @@ class MovieDataService {
     
 }
 export default new MovieDataService();
-
-//https://api.themoviedb.org/3/search/movie?query=Jack+Reacher&api_key=692c28c30c982426c3d93bdc2e18179b
