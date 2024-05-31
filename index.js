@@ -19,6 +19,26 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 const configuration = new GoogleGenerativeAI(process.env.GEMINI_AI_API_KEY);
 
 // initialisation de modèle
+const safetySettings = [
+  {
+    category: HarmCategory.HARM_CATEGORY_HARASSMENT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_HATE_SPEECH,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_SEXUALLY_EXPLICIT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+  {
+    category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
+    threshold: HarmBlockThreshold.BLOCK_NONE,
+  },
+]; 
+
+// initialisation de modèle
 const geminiId = "gemini-1.5-flash";
 const geminiFlash = configuration.getGenerativeModel({ model: geminiId });
 
