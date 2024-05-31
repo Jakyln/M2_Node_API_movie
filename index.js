@@ -4,11 +4,8 @@ import express from 'express';
 import MovieDataService from "./MovieDataService.js";
 import path from 'path';
 import { fileURLToPath } from 'url';
-/* import pkg from "@lmstudio/sdk";
-const { LMStudioClient } = pkg; */
 const app = express();
 const port = 3000;
-// const client = new LMStudioClient();
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -25,40 +22,26 @@ const configuration = new GoogleGenerativeAI(process.env.GEMINI_AI_API_KEY);
 const geminiId = "gemini-1.5-flash";
 const geminiFlash = configuration.getGenerativeModel({ model: geminiId });
 
-/* import bodyParserpackage from "body-parser";
-const bodyParser = bodyParserpackage;
-import { generateResponse } from "./controller/index.js";
-
-//middleware to parse the body content to JSON
-app.use(bodyParser.json());
-
-app.post("/generate", generateResponse);
-
-app.get("/generate", (req, res) => {
-  res.send(history);
-});
- */
-
-
-
-
-
-
 
 // Create a text completion prediction
 let jsonAPI = "";
 let readableJson = "";
 
+// Fonction qui recherche un titre de film dans la phrase passé en paramètre pour récupérer des information
+// via l'api TMDB. Le LLM cherche le film qui correspond le mieux dans la liste et génère un résultat
+// qui sera retourné à l'utilisateur.
+// Si l'api TMBD n'a pas retourné de résultat ou si aucun titre de film n'a été trouvé dans la phrase
+// passé en paramètre, alors on retourne une réponse indiquant ce qui a échoué.
 async function llm(query){
   
   //Isoler le nom du film à partir du user input
   const promptMovieName = `Quel est le nom du film dans la phrase suivante ? Attention, nous voulons seulement le titre du film et rien d'autre. Si il n'y en a pas réponds "". La phrase est : "${query}". Réponse :`;
   const generatedMovieName = await geminiFlash.generateContent(promptMovieName);
   //répond moi en json, formater ex : {reponse : tenet}
-  //connecter à chatgpt. il verif qu'on a bien extrait le nom dans la bonne langue, sans erreurs
   const movieNameResponse = await generatedMovieName.response;
   const movieName = movieNameResponse.text();
 
+  // Si pas de titre de film, répondre que l'on a pas trouvé
   if (movieName.trim() === '""'){
     readableJson = "Je n'ai pas trouvé de nom de film dans votre requête."
     return
@@ -71,14 +54,13 @@ async function llm(query){
       jsonAPI = JSON.stringify(res.data.results[0]);
     });
 
+    // Si l'api TMBD n'a pas renvoyé de résultat, on répond que l'on a pas trouvé
     if (jsonAPI === undefined){
       readableJson = "Je n'ai pas trouvé d'information à propos du film que vous m'avez donné."
       return
     }
 
     //LLM traduit en textuel le json
-    //Bonjour, j'aime beacoup Tenet, c'est mon film préféré !
-    //Ne génère pas de code Python, uniquement du HTML formaté selon les instructions ci-dessous
     const promptReadableJson =  `
     A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. Tu peux également complémenter avec tes propres informations. L'objet JSON : ${jsonAPI}`
     const predictionOfReadableJson = await geminiFlash.generateContent(promptReadableJson);
@@ -87,7 +69,7 @@ async function llm(query){
   }
 }
 
-// Index page
+// Index page (utilisé pour les tests)
 app.get('/', async (req, res) => {
   res.sendFile(path.join(__dirname, '/index.html'))
 })
@@ -96,7 +78,8 @@ app.listen(port, () => {
   console.log(`Example app listening on port ${port}...`)
 })
 
-
+// Endpoint qui traite l'entrée de l'utilisateur pour chercher quel film est mentionné
+// et renvoyer un prompt généré à partir des résultats fournis par l'api TMDB
 app.post('/request', async (req, res) => {
   if (req.body.query){
     readableJson = "";
