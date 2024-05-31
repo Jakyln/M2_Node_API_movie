@@ -35,7 +35,7 @@ const safetySettings = [
     category: HarmCategory.HARM_CATEGORY_DANGEROUS_CONTENT,
     threshold: HarmBlockThreshold.BLOCK_NONE,
   },
-];
+]; 
 
 // initialisation de modèle
 const geminiId = "gemini-1.5-flash";
