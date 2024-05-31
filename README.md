@@ -9,3 +9,5 @@ Cette application renvoi une réponse complète au film demandé par l'utilisate
 {'query': string}
 L'objet retourné est l'objet JSON suivant
 {'response': string}
+
+![schemas](https://github.com/Jakyln/M2_Node_API_movie/blob/main/schemas.png?raw=true)
