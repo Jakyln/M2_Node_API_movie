@@ -78,10 +78,13 @@ async function llm(query) {
       process.stdout.write(`|${movieName}\n`);
       movieArrayJSON = res.data; 
       //Si L'api renvoie plusieurs résultats, on fait donne la liste à Gemini pour qu'il l'analyse et ressorte le bon titre
-      for (let index = 0; index < res.data.results.length; index++) {
-        const element = res.data.results[index];
-        movieArraySimplified.push(element.title);
-      } 
+      if(movieArrayJSON){
+        for (let index = 0; index < res.data.results.length; index++) {
+          const element = res.data.results[index];
+          movieArraySimplified.push(element.title);
+        }
+      }
+      
     });
 
  
@@ -107,7 +110,9 @@ async function llm(query) {
       }
     }
 
-    jsonAPI = movieArrayJSON.results[indexRightMovie];
+    if(movieArrayJSON){
+      jsonAPI = movieArrayJSON.results[indexRightMovie];
+    }
  
     //LLM traduit en textuel le json
     const promptReadableJson = `
@@ -119,7 +124,7 @@ async function llm(query) {
     readableJson = response.text();
 
     // Si l'api TMBD n'a pas renvoyé de résultat, on répond que l'on a pas trouvé
-    if (jsonAPI === undefined) {
+    if (!jsonAPI) {
       readableJson = "Je n'ai pas trouvé d'information à propos du film que vous m'avez donné." 
       return
     }
