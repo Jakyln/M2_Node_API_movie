@@ -58,69 +58,69 @@ async function llm(query) {
   const promptMovieName = `
   Quel est le nom du film dans la phrase suivante ? 
   Si tu remarque des fautes, tu peux les corriger implicitement sans m'en informer. 
-  Attention, nous voulons seulement le titre. C'est très important car ta réponse sera envoyé à une API externe pour trouver le film.
+  Attention, nous voulons seulement le titre. C'est très important car ta réponse sera envoyé à une API externe pour trouver le film. 
   Si tu ne trouve pas de titre de film dans la réponse, répond par une chaine vide "".
   La phrase est : "${query}"`;
   const generatedMovieName = await geminiFlash.generateContent(promptMovieName);
   const movieNameResponse = await generatedMovieName.response;
-  const movieName = movieNameResponse.text();
+  const movieName = movieNameResponse.text(); 
   
-  // Si pas de titre de film, répondre que l'on a pas trouvé
+  // Si pas de titre de film, répondre que l'on a pas trouvé 
   if (movieName.trim() === '""') {
     readableJson = "Je n'ai pas trouvé de nom de film dans votre requête."
     return
-  }
+  } 
   else {
-    //Recup appel json API externe movies
+    //Recup appel json API externe movies 
     let movieArraySimplified = [];
     let movieArrayJSON = [];
     await MovieDataService.findMovieByName(movieName).then((res) => {
       process.stdout.write(`|${movieName}\n`);
-      movieArrayJSON = res.data;
+      movieArrayJSON = res.data; 
       //Si L'api renvoie plusieurs résultats, on fait donne la liste à Gemini pour qu'il l'analyse et ressorte le bon titre
       for (let index = 0; index < res.data.results.length; index++) {
         const element = res.data.results[index];
         movieArraySimplified.push(element.title);
-      }
+      } 
     });
 
-
+ 
 
 
     const promptVerifRightMovie = `
     J'ai fait une demande à une API de film à partir d'un titre en entré, et il m'a ressorti une liste.
     Cependant, le titre en entré n'est parfois pas exact et l'api renverra une erreur.
-    J'ai besoin que tu analyse cette liste, et qui tu ressorte l'élément qui correspond le mieux au titre d'entré envoyé par l'utilisateur. 
-    Attention, je ne veux pas que ta réponse soit une phrase, je veux uniquement le titre et rien d'autre, car ta réponse sera envoyé à l'api en question.
+    J'ai besoin que tu analyse cette liste, et qui tu ressorte l'élément qui correspond le mieux au titre d'entré envoyé par l'utilisateur.  
+    Attention, je ne veux pas que ta réponse soit une phrase, je veux uniquement le titre et rien d'autre, car ta réponse sera envoyé à l'api en question. 
     Le titre d'entré : "${movieName}". La liste : "${movieArraySimplified}".
-    `;
-
+    `; 
+ 
     const verifRightMovie = await geminiFlash.generateContent(promptVerifRightMovie);
-    const responseVerifRightMovie = await verifRightMovie.response;
+    const responseVerifRightMovie = await verifRightMovie.response; 
     const titleRightMovie = responseVerifRightMovie.text();
-    let indexRightMovie = -1;
-    process.stdout.write(`\n|${titleRightMovie},`);
-    for (let index = 0; index < movieArraySimplified.length; index++) {
+    let indexRightMovie = -1; 
+    process.stdout.write(`\n|${titleRightMovie},`); 
+    for (let index = 0; index < movieArraySimplified.length; index++) { 
       const title = movieArraySimplified[index];
-      if (title.trim() === titleRightMovie.trim()) {
+      if (title.trim() === titleRightMovie.trim()) { 
         indexRightMovie = index;
       }
     }
 
     jsonAPI = movieArrayJSON.results[indexRightMovie];
-
+ 
     //LLM traduit en textuel le json
     const promptReadableJson = `
     A partir de l'objet JSON que je vais t'envoyer, dis moi ce que tu sais du film. 
     Evidemment, je ne veux pas que tu m'énumère les propriétés de l'objet JSON en lui même. 
     Tu peux également complémenter avec tes propres informations. L'objet JSON : ${JSON.stringify(jsonAPI)}`
     const predictionOfReadableJson = await geminiFlash.generateContent(promptReadableJson);
-    const response = await predictionOfReadableJson.response;
+    const response = await predictionOfReadableJson.response; 
     readableJson = response.text();
 
     // Si l'api TMBD n'a pas renvoyé de résultat, on répond que l'on a pas trouvé
     if (jsonAPI === undefined) {
-      readableJson = "Je n'ai pas trouvé d'information à propos du film que vous m'avez donné."
+      readableJson = "Je n'ai pas trouvé d'information à propos du film que vous m'avez donné." 
       return
     }
   }
@@ -131,21 +131,21 @@ app.get('/', async (req, res) => {
   res.sendFile(path.join(__dirname, '/index.html'))
 })
 
-app.listen(port, () => {
+app.listen(port, () => { 
   console.log(`Example app listening on port ${port}...`)
 })
 
 
-// Endpoint qui traite l'entrée de l'utilisateur pour chercher quel film est mentionné
+// Endpoint qui traite l'entrée de l'utilisateur pour chercher quel film est mentionné 
 // et renvoyer un prompt généré à partir des résultats fournis par l'api TMDB
 app.post('/request', async (req, res) => {
   if (req.body.query) {
-    readableJson = "";
+    readableJson = ""; 
     await llm(req.body.query)
     res.send({ response: readableJson })
   }
   else {
-    res.send({ response: "Vous devez renseigner le paramettre 'query'." })
+    res.send({ response: "Vous devez renseigner le paramettre 'query'." }) 
   }
 })
 
